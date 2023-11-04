@@ -110,13 +110,6 @@ function GerioYMZ.Update(self)
 	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
 		for i = 0, self.Buffer:getSampleCount()-1 do
 			--self.Buffer:getSampleRate()
-			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition+1]) then
-				if self.Loops > 1 then
-					self:Play(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
-				else
-					self.Playing = "Paused"
-				end
-			end
 			if self.Hertz == self.Buffer:getSampleRate() then
 				ProcessYMZ(self)
 				self.PreviousSampleLoudness = self.CurrentSampleLoudness
@@ -138,6 +131,13 @@ function GerioYMZ.Update(self)
 			--print(((self.CurrentSampleLoudness-2048)*(1/4096))*self.Volume)
 		-- queue it up
 			self.Qsource:queue(self.Buffer)
+			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition+1]) then
+				if self.Loops > 1 then
+					self:Play(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
+				else
+					self.Playing = "Paused"
+				end
+			end
 		end
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
 	end
