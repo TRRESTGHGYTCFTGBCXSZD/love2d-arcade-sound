@@ -36,6 +36,7 @@ end
 
 local function ProcessVOX(self)
 	self.CurrentPosition = self.CurrentPosition + 1
+	if not self.Samples[self.CurrentPosition] then return end
 	diff = VOXVelocity[self.CurrentStepSize]/8
 	if math.fmod(self.Samples[self.CurrentPosition],2) >= 1 then
 	diff = diff + VOXVelocity[self.CurrentStepSize]/4
