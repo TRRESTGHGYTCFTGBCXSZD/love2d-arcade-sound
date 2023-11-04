@@ -53,7 +53,7 @@ function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- po
 	if Loop and Loop == true then
 		self.Loops = math.huge
 	elseif Loop and type(Loop) == "number" then
-		self.Loops = Loop
+		self.Loops = Loop-1
 	end
 	
 	self.CurrentPosition = Position
@@ -80,6 +80,10 @@ end
 
 function GerioVOX.Stop(self)
 	self.Playing = false
+end
+
+function GerioVOX.Postpone(self)
+	self.Playing = true
 end
 
 function bitoper(a, b, oper)
@@ -139,7 +143,7 @@ local function ProcessVOX(self)
 end
 
 function GerioVOX.Update(self)
-	if self.Playing then
+	if self.Playing == true then
 	if self.Qsource:getFreeBufferCount() > 0 then
 	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
 		for i = 0, self.Buffer:getSampleCount()-1 do
@@ -148,7 +152,7 @@ function GerioVOX.Update(self)
 				if self.Loops > 0 then
 					self:Play(self.LoopPosition,self.EndPosition,self.Volume,self.Loops - 1,self.LoopPosition)
 				else
-					self:Stop()
+					self.Playing = "Paused"
 				end
 			end
 			ProcessVOX(self)
@@ -162,7 +166,8 @@ function GerioVOX.Update(self)
 		end
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
 	end
-	else
+	elseif self.Playing == "Paused" then
+	elseif self.Playing == false then
 		self.Qsource:stop()
 	end
 end
