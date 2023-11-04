@@ -1,2 +1,2 @@
-# love2d-arcade-sound
-This is Sound Player Used in Arcades Reading as Raw Format.
+# Love2D Sound Chip Player
+This is Sound Player Used in Arcades Reading as Raw Format. YMZ/YMU ADPCM Used in Yamaha YMZ/YMU Series, VOX ADPCM Used in OKI MSM6295, ADPCM-A and ADPCM-A Used in Yamaha YM2608 Series, In A Lua File. 
