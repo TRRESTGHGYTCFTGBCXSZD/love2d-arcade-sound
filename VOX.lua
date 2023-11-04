@@ -1,0 +1,170 @@
+-- Love2D VOX ADPCM Player - It's used on OKI MSM6295, and Audacity Supports This Format.
+-- Created By GerioSB, ONLY FEED RAW FILES
+
+local VOXVelocity = {16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,
+107,118,130,143,157,173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,
+724,796,876,963,1060,1166,1282,1411,1552}
+
+GerioVOX = {}
+
+setmetatable(GerioVOX, {
+	__call = function (class, ...)
+		return class.Create(class, ...)
+	end,
+})
+
+GerioVOX.Buffer = nil
+GerioVOX.Qsource = nil
+GerioVOX.Samples = {}
+GerioVOX.Hertz = 8000
+GerioVOX.Loops = 0
+GerioVOX.EndPosition = 0
+GerioVOX.LoopPosition = 0
+GerioVOX.CurrentPosition = 0
+GerioVOX.CurrentSubPosition = 0
+GerioVOX.Volume = 1
+GerioVOX.Playing = false
+GerioVOX.CurrentSampleLoudness = 0
+GerioVOX.CurrentStepSize = 0
+GerioVOX.PreviousSampleLoudness = 0
+GerioVOX.ZeroChain = 0
+GerioVOX.ZeroChainPositive = false
+
+function GerioVOX.Create(self,Sound,Hertz,MSM6295)
+	if MSM6295 and MSM6295 == 1 then
+		Hertz = Hertz * (8000/1056000)
+	elseif MSM6295 and MSM6295 == 2 then
+		Hertz = Hertz * (6400/1056000)
+	else
+		Hertz = Hertz
+	end
+	self.Buffer = love.sound.newSoundData(2048,Hertz,16,1)
+	print(self.Buffer)
+	self.Qsource = love.audio.newQueueableSource(Hertz,16,1,2)
+	print(self.Qsource)
+	for p = 1,string.len(Sound) do
+		local DualSample = string.byte(string.sub(Sound,p,p))
+		table.insert(self.Samples,math.floor(DualSample/16))
+		table.insert(self.Samples,math.fmod(DualSample,16))
+	end
+	return self
+end
+
+function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- position on samples
+	
+	if Loop and Loop == true then
+		self.Loops = math.huge
+	elseif Loop and type(Loop) == "number" then
+		self.Loops = Loop
+	end
+	
+	self.CurrentPosition = Position
+	self.CurrentSampleLoudness = 2048
+	self.CurrentStepSize = 1
+	self.EndPosition = EndPosition
+	self.ZeroChain = 0
+	self.ZeroChainPositive = false
+	self.LoopPosition = LoopPosition or Position
+	self.Playing = true
+	self.Volume = Volume or 1
+end
+
+function GerioVOX.Change(self,EndPosition,Volume,Loop,LoopPosition)
+	if LoopPosition then self.LoopPosition = LoopPosition end
+	if EndPosition then self.EndPosition = EndPosition end
+	if Loop and Loop == true then
+		self.Loops = math.huge
+	elseif Loop and type(Loop) == "number" then
+		self.Loops = Loop
+	end
+	if Volume then self.Volume = Volume end
+end
+
+function GerioVOX.Stop(self)
+	self.Playing = false
+end
+
+function bitoper(a, b, oper)
+   local r, m, s = 0, 2^31
+   repeat
+      s,a,b = a+b+m, a%m, b%m
+      r,m = r + m*oper%(s-a-b), m/2
+   until m < 1
+   return r
+end
+
+local function GetStepSize(OldStepSize,Sample)
+	local StepSize
+	if math.fmod(Sample,8) == 4 then
+		StepSize = OldStepSize + 2
+	elseif math.fmod(Sample,8) == 5 then
+		StepSize = OldStepSize + 4
+	elseif math.fmod(Sample,8) == 6 then
+		StepSize = OldStepSize + 6
+	elseif math.fmod(Sample,8) == 7 then
+		StepSize = OldStepSize + 8
+	else
+		StepSize = OldStepSize - 1
+	end
+	return StepSize
+end
+
+local function clamp(x, a, b)
+    return x > b and b or x < a and a or x;
+end
+
+local function ProcessVOX(self)
+	self.CurrentPosition = self.CurrentPosition + 1
+	diff = VOXVelocity[self.CurrentStepSize]/8
+	if math.fmod(self.Samples[self.CurrentPosition],2) >= 1 then
+	diff = diff + VOXVelocity[self.CurrentStepSize]/4
+	end
+	if math.fmod(self.Samples[self.CurrentPosition],4) >= 2 then
+	diff = diff + VOXVelocity[self.CurrentStepSize]/2
+	end
+	if math.fmod(self.Samples[self.CurrentPosition],8) >= 4 then
+	diff = diff + VOXVelocity[self.CurrentStepSize]
+	end
+	self.CurrentSampleLoudness = clamp(self.CurrentSampleLoudness + (diff * (self.Samples[self.CurrentPosition] >= 8 and -1 or 1)),0,4095)
+	self.CurrentStepSize = clamp(GetStepSize(self.CurrentStepSize,self.Samples[self.CurrentPosition]),1,49)
+	if (math.fmod(self.Samples[self.CurrentPosition],8) < 8) ~= self.ZeroChainPositive then
+		self.ZeroChain = self.ZeroChain + 1
+	else
+		self.ZeroChain = 0
+	end
+	if self.ZeroChain >= 48 then
+	self.CurrentSampleLoudness = 2048
+	self.CurrentStepSize = 1
+	self.ZeroChain = 0
+	end
+	self.ZeroChainPositive = math.fmod(self.Samples[self.CurrentPosition],8) < 8
+end
+
+function GerioVOX.Update(self)
+	if self.Playing then
+	if self.Qsource:getFreeBufferCount() > 0 then
+	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
+		for i = 0, self.Buffer:getSampleCount()-1 do
+			--self.Buffer:getSampleRate()
+			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition]) then
+				if self.Loops > 0 then
+					self:Play(self.LoopPosition,self.EndPosition,self.Volume,self.Loops - 1,self.LoopPosition)
+				else
+					self:Stop()
+				end
+			end
+			ProcessVOX(self)
+			--print(((self.CurrentSampleLoudness-2048)*(1/4096))*self.Volume)
+			self.PreviousSampleLoudness = self.CurrentSampleLoudness
+			for c = 1, self.Buffer:getChannelCount() do
+				self.Buffer:setSample(i, c, ((self.CurrentSampleLoudness-2048)*(1/4096))*self.Volume)
+			end
+		-- queue it up
+			self.Qsource:queue(self.Buffer)
+		end
+		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
+	end
+	else
+		self.Qsource:stop()
+	end
+end
