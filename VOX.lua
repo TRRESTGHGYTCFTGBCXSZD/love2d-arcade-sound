@@ -39,9 +39,7 @@ function GerioVOX.Create(self,Sound,Hertz,MSM6295)
 		Hertz = Hertz
 	end
 	self.Buffer = love.sound.newSoundData(2048,Hertz,16,1)
-	print(self.Buffer)
 	self.Qsource = love.audio.newQueueableSource(Hertz,16,1,2)
-	print(self.Qsource)
 	for p = 1,string.len(Sound) do
 		local DualSample = string.byte(string.sub(Sound,p,p))
 		table.insert(self.Samples,math.floor(DualSample/16))
