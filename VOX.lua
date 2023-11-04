@@ -53,7 +53,9 @@ function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- po
 	if Loop and Loop == true then
 		self.Loops = math.huge
 	elseif Loop and type(Loop) == "number" then
-		self.Loops = Loop-1
+		self.Loops = Loop
+	else
+		self.Loops = 0
 	end
 	
 	self.CurrentPosition = Position
@@ -149,7 +151,7 @@ function GerioVOX.Update(self)
 		for i = 0, self.Buffer:getSampleCount()-1 do
 			--self.Buffer:getSampleRate()
 			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition]) then
-				if self.Loops > 0 then
+				if self.Loops > 1 then
 					self:Play(self.LoopPosition,self.EndPosition,self.Volume,self.Loops - 1,self.LoopPosition)
 				else
 					self.Playing = "Paused"
