@@ -127,7 +127,7 @@ local function ProcessVOX(self)
 	end
 	self.CurrentSampleLoudness = clamp(self.CurrentSampleLoudness + (diff * (self.Samples[self.CurrentPosition] >= 8 and -1 or 1)),0,4095)
 	self.CurrentStepSize = clamp(GetStepSize(self.CurrentStepSize,self.Samples[self.CurrentPosition]),1,49)
-	if (math.fmod(self.Samples[self.CurrentPosition],8) < 8) ~= self.ZeroChainPositive then
+	--[[if (math.fmod(self.Samples[self.CurrentPosition],8) < 8) ~= self.ZeroChainPositive then
 		self.ZeroChain = self.ZeroChain + 1
 	else
 		self.ZeroChain = 0
@@ -136,7 +136,7 @@ local function ProcessVOX(self)
 	self.CurrentSampleLoudness = 2048
 	self.CurrentStepSize = 1
 	self.ZeroChain = 0
-	end
+	end--]]
 	self.ZeroChainPositive = math.fmod(self.Samples[self.CurrentPosition],8) < 8
 end
 
