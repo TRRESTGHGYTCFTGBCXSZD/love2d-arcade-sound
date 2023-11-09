@@ -133,7 +133,6 @@ function GerioVOX.Update(self)
 	if self.Playing == true then
 	if self.Qsource:getFreeBufferCount() > 0 then
 	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
-		for _ = 0, self.Qsource:getFreeBufferCount()-1 do
 		for i = 0, self.Buffer:getSampleCount()-1 do
 			--self.Buffer:getSampleRate()
 			ProcessVOX(self)
@@ -153,7 +152,6 @@ function GerioVOX.Update(self)
 			end
 		end
 		self.Qsource:queue(self.Buffer)
-		end
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
 	end
 	elseif self.Playing == "Paused" then
