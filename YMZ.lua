@@ -7,14 +7,6 @@ local YMZIndexScale = { 0x0e6, 0x0e6, 0x0e6, 0x0e6, 0x133, 0x199, 0x200, 0x266 }
 		YMZVelocity[nib] = nib >= 8 and -value or value
 	end
 
-function bitoper(a, b, oper)
-   local r, m, s = 0, 2^31
-   repeat
-      s,a,b = a+b+m, a%m, b%m
-      r,m = r + m*oper%(s-a-b), m/2
-   until m < 1
-   return r
-end
 
 local function GetStepSize(OldStepSize,Sample)
 	local StepSize
@@ -34,6 +26,8 @@ end
 
 local function lerp(a,b,t) return a * (1-t) + b * t end
 
+local function inverselerp(a,b,t) return (t-a)/(b-a) end
+
 local function clamp(x, a, b)
     return x > b and b or x < a and a or x;
 end
@@ -49,7 +43,7 @@ return function(Sound)
 local GerioYMZ = {}
 
 GerioYMZ.Buffer = love.sound.newSoundData(2048,48000,16,1)
-GerioYMZ.Qsource = love.audio.newQueueableSource(48000,16,1,2)
+GerioYMZ.Qsource = love.audio.newQueueableSource(48000,16,1,16)
 GerioYMZ.Samples = {}
 GerioYMZ.Hertz = 22050
 GerioYMZ.Loops = 0
@@ -110,35 +104,37 @@ function GerioYMZ.Update(self)
 	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
 		for i = 0, self.Buffer:getSampleCount()-1 do
 			--self.Buffer:getSampleRate()
-			if self.Hertz == self.Buffer:getSampleRate() then
+			--if self.Hertz == self.Buffer:getSampleRate() then
 				ProcessYMZ(self)
 				self.PreviousSampleLoudness = self.CurrentSampleLoudness
 				for c = 1, self.Buffer:getChannelCount() do
-					self.Buffer:setSample(i, c, clamp(((self.CurrentSampleLoudness-32768)*(1/65536))*self.Volume,-1,1))
+					self.Buffer:setSample(i, c, clamp((lerp(-1,1,inverselerp(0,65535,self.CurrentSampleLoudness)))*self.Volume,-1,1))
 				end
-			else
+			--[[else
 				self.CurrentSubPosition = self.CurrentSubPosition + (self.Hertz/self.Buffer:getSampleRate())
 				while self.CurrentSubPosition >= 1 do
 					ProcessYMZ(self)
 					self.PreviousSampleLoudness = self.CurrentSampleLoudness
 					self.CurrentSubPosition = self.CurrentSubPosition - 1
 				end
-				local nriyrbgyu = lerp((self.PreviousSampleLoudness-32768)*(1/65536),(self.CurrentSampleLoudness-32768)*(1/65536),self.CurrentSubPosition)
+				local nriyrbgyu = lerp(lerp(-1,1,inverselerp(0,65535,self.PreviousSampleLoudness)),lerp(-1,1,inverselerp(0,65535,self.CurrentSampleLoudness)),self.CurrentSubPosition)
 				for c = 1, self.Buffer:getChannelCount() do
 					self.Buffer:setSample(i, c, clamp(nriyrbgyu*self.Volume,-1,1))
 				end
-			end
+			end--]]
 			--print(((self.CurrentSampleLoudness-2048)*(1/4096))*self.Volume)
 		-- queue it up
-			self.Qsource:queue(self.Buffer)
 			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition+1]) then
 				if self.Loops > 1 then
 					self:Play(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
 				else
 					self.Playing = "Paused"
+					break
 				end
 			end
 		end
+		self.Qsource:queue(self.Buffer)
+		self.Qsource:setPitch(self.Hertz/self.Buffer:getSampleRate())
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
 	end
 	elseif self.Playing == "Paused" then
