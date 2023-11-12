@@ -57,7 +57,7 @@ local function ProcessVOX(self)
 	self.ZeroChainPositive = math.fmod(self.Samples[self.CurrentPosition],8) < 8
 end
 
-return function(Sound,Hertz,MSM6295)
+return function(Sound,Hertz,MSM62xx,SwapNibbles)
 
 local GerioVOX = {}
 
@@ -78,9 +78,9 @@ GerioVOX.PreviousSampleLoudness = 0
 GerioVOX.ZeroChain = 0
 GerioVOX.ZeroChainPositive = false
 
-	if MSM6295 and MSM6295 == 1 then
+	if MSM62xx and MSM62xx == 1 then
 		Hertz = Hertz * (8000/1056000)
-	elseif MSM6295 and MSM6295 == 2 then
+	elseif MSM62xx and MSM62xx == 2 then
 		Hertz = Hertz * (6400/1056000)
 	else
 		Hertz = Hertz
@@ -89,8 +89,13 @@ GerioVOX.ZeroChainPositive = false
 	GerioVOX.Qsource = love.audio.newQueueableSource(Hertz,16,1,4)
 	for p = 1,string.len(Sound) do
 		local DualSample = string.byte(string.sub(Sound,p,p))
+		if SwapNibbles then -- MSM6258
+		table.insert(GerioVOX.Samples,math.fmod(DualSample,16))
+		table.insert(GerioVOX.Samples,math.floor(DualSample/16))
+		else -- MSM6295
 		table.insert(GerioVOX.Samples,math.floor(DualSample/16))
 		table.insert(GerioVOX.Samples,math.fmod(DualSample,16))
+		end
 	end
 
 function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- position on samples
