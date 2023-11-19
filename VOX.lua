@@ -1,4 +1,4 @@
--- Love2D VOX ADPCM Player - It's used on OKI MSM6295, and Audacity Supports This Format.
+-- Love2D Dialogic VOX ADPCM Player - It's used on OKI MSM6295, and Audacity Supports This Format.
 -- Created By GerioSB, ONLY FEED RAW FILES
 
 local VOXVelocity = {16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,
@@ -107,6 +107,7 @@ function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- po
 	else
 		self.Loops = 0
 	end
+	self.Qsource:setPitch(math.huge)
 	
 	self.CurrentPosition = Position
 	self.CurrentSampleLoudness = 2048
@@ -157,11 +158,12 @@ function GerioVOX.Update(self)
 			end
 		end
 		self.Qsource:queue(self.Buffer)
+		self.Qsource:setPitch(1)
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
 	end
 	elseif self.Playing == "Paused" then
 	elseif self.Playing == false then
-		self.Qsource:stop()
+		self.Qsource:setPitch(math.huge)
 	end
 end
 

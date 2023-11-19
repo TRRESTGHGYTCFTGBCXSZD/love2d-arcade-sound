@@ -1,5 +1,5 @@
--- Love2D YMZ ADPCM Player - It's used on YMZ/YMU Series, and Audacity Does not Support This Format.
--- Created By GerioSB, ONLY FEED RAW FILES
+-- Love2D Yamaha YMZ ADPCM Player - It's used on YMZ/YMU Series, and Audacity Does not Support This Format.
+-- Created By GerioSB, Ported From MAME, ONLY FEED RAW FILES
 local YMZVelocity = {}
 local YMZIndexScale = { 0x0e6, 0x0e6, 0x0e6, 0x0e6, 0x133, 0x199, 0x200, 0x266 }
 	for nib = 0,15 do
@@ -72,6 +72,7 @@ function GerioYMZ.Play(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	else
 		self.Loops = 0
 	end
+	self.Qsource:setPitch(math.huge)
 	
 	self.CurrentPosition = Position
 	self.CurrentSampleLoudness = 32768
@@ -139,7 +140,7 @@ function GerioYMZ.Update(self)
 	end
 	elseif self.Playing == "Paused" then
 	elseif self.Playing == false then
-		self.Qsource:stop()
+		self.Qsource:setPitch(math.huge)
 	end
 end
 
