@@ -72,7 +72,7 @@ function GerioYMZ.Play(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	else
 		self.Loops = 0
 	end
-	self.Qsource:setPitch(math.huge)
+	self.Qsource:setPitch(1e+38)
 	
 	self.CurrentPosition = Position
 	self.CurrentSampleLoudness = 32768
@@ -140,7 +140,7 @@ function GerioYMZ.Update(self)
 	end
 	elseif self.Playing == "Paused" then
 	elseif self.Playing == false then
-		self.Qsource:setPitch(math.huge)
+		self.Qsource:setPitch(1e+38)
 	end
 end
 
