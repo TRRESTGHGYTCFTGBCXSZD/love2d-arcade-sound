@@ -121,6 +121,27 @@ function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- po
 	self.Volume = Volume or 1
 end
 
+function GerioVOX.PlayNoQueueExhaustion(self,Position,EndPosition,Volume,Loop,LoopPosition) -- position on samples
+	
+	if Loop and Loop == true then
+		self.Loops = math.huge
+	elseif Loop and type(Loop) == "number" then
+		self.Loops = Loop
+	else
+		self.Loops = 0
+	end
+	
+	self.CurrentPosition = Position
+	self.CurrentSampleLoudness = 2048
+	self.CurrentStepSize = 1
+	self.EndPosition = EndPosition
+	self.ZeroChain = 0
+	self.ZeroChainPositive = false
+	self.LoopPosition = LoopPosition or Position
+	self.Playing = true
+	self.Volume = Volume or 1
+end
+
 function GerioVOX.Change(self,EndPosition,Volume,Loop,LoopPosition)
 	if LoopPosition then self.LoopPosition = LoopPosition end
 	if EndPosition then self.EndPosition = EndPosition end
@@ -156,7 +177,7 @@ function GerioVOX.Update(self)
 		-- queue it up
 			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition]) then
 				if self.Loops > 1 then
-					self:Play(self.LoopPosition,self.EndPosition,self.Volume,self.Loops - 1,self.LoopPosition)
+					self:PlayNoQueueExhaustion(self.LoopPosition,self.EndPosition,self.Volume,self.Loops - 1,self.LoopPosition)
 				else
 					self.Playing = "Paused"
 					break

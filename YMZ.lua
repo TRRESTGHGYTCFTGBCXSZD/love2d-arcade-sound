@@ -85,6 +85,26 @@ function GerioYMZ.Play(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	self.Volume = Volume or 1
 end
 
+function GerioYMZ.PlayNoQueueExhaustion(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition) -- position on samples
+	
+	if Loop and Loop == true then
+		self.Loops = math.huge
+	elseif Loop and type(Loop) == "number" then
+		self.Loops = Loop
+	else
+		self.Loops = 0
+	end
+	
+	self.CurrentPosition = Position
+	self.CurrentSampleLoudness = 32768
+	self.CurrentStepSize = 1
+	self.Hertz = Hertz
+	self.EndPosition = EndPosition
+	self.LoopPosition = LoopPosition or Position
+	self.Playing = true
+	self.Volume = Volume or 1
+end
+
 function GerioYMZ.Change(self,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	if LoopPosition then self.LoopPosition = LoopPosition end
 	if EndPosition then self.EndPosition = EndPosition end
@@ -133,7 +153,7 @@ function GerioYMZ.Update(self)
 		-- queue it up
 			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition+1]) then
 				if self.Loops > 1 then
-					self:Play(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
+					self:PlayNoQueueExhaustion(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
 				else
 					self.Playing = "Paused"
 					break
