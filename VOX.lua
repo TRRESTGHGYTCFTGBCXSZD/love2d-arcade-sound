@@ -140,7 +140,7 @@ function GerioVOX.Update(self)
 	if self.Playing == true then
 	if self.QueueExhaustion then
 		self.Qsource:setPitch(1e+38)
-		self.QueueExhaustion = self.Qsource:getFreeBufferCount() >= 4
+		self.QueueExhaustion = self.Qsource:getFreeBufferCount() < 4
 	end
 	if not self.QueueExhaustion then
 	if self.Qsource:getFreeBufferCount() > 0 then
