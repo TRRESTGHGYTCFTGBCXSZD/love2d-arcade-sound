@@ -56,6 +56,7 @@ GerioYMZ.Playing = false
 GerioYMZ.CurrentSampleLoudness = 32768
 GerioYMZ.CurrentStepSize = 0
 GerioYMZ.PreviousSampleLoudness = 0
+GerioYMZ.QueueExhaustion = false
 
 	for p = 1,string.len(Sound) do
 		local DualSample = string.byte(string.sub(Sound,p,p))
@@ -72,7 +73,7 @@ function GerioYMZ.Play(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	else
 		self.Loops = 0
 	end
-	self.Qsource:setPitch(1e+38)
+	self.QueueExhaustion = true
 	
 	self.CurrentPosition = Position
 	self.CurrentSampleLoudness = 32768
@@ -101,6 +102,11 @@ end
 
 function GerioYMZ.Update(self)
 	if self.Playing == true then
+	if self.QueueExhaustion then
+		self.Qsource:setPitch(1e+38)
+		self.QueueExhaustion = self.Qsource:getFreeBufferCount() >= 16
+	end
+	if not self.QueueExhaustion then
 	if self.Qsource:getFreeBufferCount() > 0 then
 	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
 		for i = 0, self.Buffer:getSampleCount()-1 do
@@ -138,9 +144,10 @@ function GerioYMZ.Update(self)
 		self.Qsource:setPitch(self.Hertz/self.Buffer:getSampleRate())
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
 	end
+	end
 	elseif self.Playing == "Paused" then
 	elseif self.Playing == false then
-		self.Qsource:setPitch(1e+38)
+		self.QueueExhaustion = true
 	end
 end
 

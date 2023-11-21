@@ -77,6 +77,7 @@ GerioVOX.CurrentStepSize = 0
 GerioVOX.PreviousSampleLoudness = 0
 GerioVOX.ZeroChain = 0
 GerioVOX.ZeroChainPositive = false
+GerioVOX.QueueExhaustion = false
 
 	if MSM62xx and MSM62xx == 1 then
 		Hertz = Hertz * (8000/1056000)
@@ -107,7 +108,7 @@ function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- po
 	else
 		self.Loops = 0
 	end
-	self.Qsource:setPitch(1e+38)
+	self.QueueExhaustion = true
 	
 	self.CurrentPosition = Position
 	self.CurrentSampleLoudness = 2048
@@ -137,6 +138,11 @@ end
 
 function GerioVOX.Update(self)
 	if self.Playing == true then
+	if self.QueueExhaustion then
+		self.Qsource:setPitch(1e+38)
+		self.QueueExhaustion = self.Qsource:getFreeBufferCount() >= 4
+	end
+	if not self.QueueExhaustion then
 	if self.Qsource:getFreeBufferCount() > 0 then
 	-- generate one buffer's worth of audio data; the above line is enough for timing purposes
 		for i = 0, self.Buffer:getSampleCount()-1 do
@@ -160,10 +166,11 @@ function GerioVOX.Update(self)
 		self.Qsource:queue(self.Buffer)
 		self.Qsource:setPitch(1)
 		self.Qsource:play() -- keep playing so playback never stalls, even if there are underruns; no, this isn't heavy on processing.
+		end
 	end
 	elseif self.Playing == "Paused" then
 	elseif self.Playing == false then
-		self.Qsource:setPitch(1e+38)
+		self.QueueExhaustion = true
 	end
 end
 
