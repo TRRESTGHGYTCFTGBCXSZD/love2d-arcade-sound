@@ -7,6 +7,7 @@ local YMZIndexScale = { 0x0e6, 0x0e6, 0x0e6, 0x0e6, 0x133, 0x199, 0x200, 0x266 }
 		YMZVelocity[nib] = nib >= 8 and -value or value
 	end
 
+local qsourceblocks = 8
 
 local function GetStepSize(OldStepSize,Sample)
 	local StepSize
@@ -43,7 +44,7 @@ return function(Sound)
 local GerioYMZ = {}
 
 GerioYMZ.Buffer = love.sound.newSoundData(2048,48000,16,1)
-GerioYMZ.Qsource = love.audio.newQueueableSource(48000,16,1,16)
+GerioYMZ.Qsource = love.audio.newQueueableSource(48000,16,1,qsourceblocks)
 GerioYMZ.Samples = {}
 GerioYMZ.Hertz = 22050
 GerioYMZ.Loops = 0
@@ -52,6 +53,7 @@ GerioYMZ.LoopPosition = 0
 GerioYMZ.CurrentPosition = 0
 GerioYMZ.CurrentSubPosition = 0
 GerioYMZ.Volume = 1
+GerioYMZ.Looped = false
 GerioYMZ.Playing = false
 GerioYMZ.CurrentSampleLoudness = 32768
 GerioYMZ.CurrentStepSize = 0
@@ -83,6 +85,7 @@ function GerioYMZ.Play(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	self.LoopPosition = LoopPosition or Position
 	self.Playing = true
 	self.Volume = Volume or 1
+	self.Looped = false
 end
 
 function GerioYMZ.PlayNoQueueExhaustion(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition) -- position on samples
@@ -116,6 +119,19 @@ function GerioYMZ.Change(self,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	if Volume then self.Volume = Volume end
 end
 
+function GerioYMZ.GetPosition(self)
+	if not self:IsPlaying() then return nil end
+	local haribon = (self.CurrentPosition-((qsourceblocks-self.Qsource:getFreeBufferCount())*2048))+self.Qsource:tell("samples")
+	if haribon < self.LoopPosition and self.Looped then haribon = haribon + math.abs(self.EndPosition - self.LoopPosition) end
+	return haribon
+end
+
+function GerioYMZ.IsPlaying(self)
+	local playing = self.Qsource:getFreeBufferCount() < qsourceblocks or self.Playing
+	if playing == "Paused" then playing = false end
+	return playing
+end
+
 function GerioYMZ.Stop(self)
 	self.Playing = false
 end
@@ -124,7 +140,7 @@ function GerioYMZ.Update(self)
 	if self.Playing == true then
 	if self.QueueExhaustion then
 		self.Qsource:setPitch(1e+38)
-		self.QueueExhaustion = self.Qsource:getFreeBufferCount() < 16
+		self.QueueExhaustion = self.Qsource:getFreeBufferCount() < qsourceblocks
 	end
 	if not self.QueueExhaustion then
 	if self.Qsource:getFreeBufferCount() > 0 then
@@ -154,6 +170,7 @@ function GerioYMZ.Update(self)
 			if self.CurrentPosition >= self.EndPosition or (not self.Samples[self.CurrentPosition+1]) then
 				if self.Loops > 1 then
 					self:PlayNoQueueExhaustion(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
+					self.Looped = true
 				else
 					self.Playing = "Paused"
 					break
@@ -166,6 +183,9 @@ function GerioYMZ.Update(self)
 	end
 	end
 	elseif self.Playing == "Paused" then
+		if not (self.Qsource:getFreeBufferCount() < qsourceblocks) then
+			self.Playing = false
+		end
 	elseif self.Playing == false then
 		self.QueueExhaustion = true
 	end
