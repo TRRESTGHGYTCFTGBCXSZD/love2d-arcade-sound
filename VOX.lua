@@ -71,7 +71,7 @@ GerioVOX.Loops = 0
 GerioVOX.EndPosition = 0
 GerioVOX.LoopPosition = 0
 GerioVOX.CurrentPosition = 0
-GerioVOX.CurrentSubPosition = 0
+GerioVOX.PlayPosition = 0
 GerioVOX.Volume = 1
 GerioVOX.Looped = false
 GerioVOX.Playing = false
@@ -114,6 +114,7 @@ function GerioVOX.Play(self,Position,EndPosition,Volume,Loop,LoopPosition) -- po
 	self.QueueExhaustion = true
 	
 	self.CurrentPosition = Position
+	self.PlayPosition = Position
 	self.CurrentSampleLoudness = 2048
 	self.CurrentStepSize = 1
 	self.EndPosition = EndPosition
@@ -164,6 +165,12 @@ function GerioVOX.GetPosition(self)
 	return haribon
 end
 
+function GerioVOX.GetElapsedSamples(self)
+	if not self:IsPlaying() then return nil end
+	local haribon = (self.CurrentPosition-((qsourceblocks-self.Qsource:getFreeBufferCount())*2048)-self.PlayPosition)+self.Qsource:tell("samples")
+	return haribon
+end
+
 function GerioVOX.IsPlaying(self)
 	local playing = self.Qsource:getFreeBufferCount() < qsourceblocks or self.Playing
 	if playing == "Paused" then playing = false end
@@ -196,6 +203,7 @@ function GerioVOX.Update(self)
 				if self.Loops > 1 then
 					self:PlayNoQueueExhaustion(self.LoopPosition,self.EndPosition,self.Volume,self.Loops - 1,self.LoopPosition)
 					self.Looped = true
+					self.PlayPosition = self.PlayPosition - math.abs(self.EndPosition - self.LoopPosition)
 				else
 					self.Playing = "Paused"
 					break

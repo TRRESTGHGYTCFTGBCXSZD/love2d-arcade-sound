@@ -51,7 +51,7 @@ GerioYMZ.Loops = 0
 GerioYMZ.EndPosition = 0
 GerioYMZ.LoopPosition = 0
 GerioYMZ.CurrentPosition = 0
-GerioYMZ.CurrentSubPosition = 0
+GerioYMZ.PlayPosition = 0
 GerioYMZ.Volume = 1
 GerioYMZ.Looped = false
 GerioYMZ.Playing = false
@@ -78,6 +78,7 @@ function GerioYMZ.Play(self,Position,EndPosition,Hertz,Volume,Loop,LoopPosition)
 	self.QueueExhaustion = true
 	
 	self.CurrentPosition = Position
+	self.PlayPosition = Position
 	self.CurrentSampleLoudness = 32768
 	self.CurrentStepSize = 1
 	self.Hertz = Hertz
@@ -126,6 +127,12 @@ function GerioYMZ.GetPosition(self)
 	return haribon
 end
 
+function GerioYMZ.GetElapsedSamples(self)
+	if not self:IsPlaying() then return nil end
+	local haribon = (self.CurrentPosition-((qsourceblocks-self.Qsource:getFreeBufferCount())*2048)-self.PlayPosition)+self.Qsource:tell("samples")
+	return haribon
+end
+
 function GerioYMZ.IsPlaying(self)
 	local playing = self.Qsource:getFreeBufferCount() < qsourceblocks or self.Playing
 	if playing == "Paused" then playing = false end
@@ -171,6 +178,7 @@ function GerioYMZ.Update(self)
 				if self.Loops > 1 then
 					self:PlayNoQueueExhaustion(self.LoopPosition,self.EndPosition,self.Hertz,self.Volume,self.Loops - 1,self.LoopPosition)
 					self.Looped = true
+					self.PlayPosition = self.PlayPosition - math.abs(self.EndPosition - self.LoopPosition)
 				else
 					self.Playing = "Paused"
 					break
